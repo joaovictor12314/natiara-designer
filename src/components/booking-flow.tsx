@@ -89,12 +89,14 @@ export function BookingFlow() {
   }
 
   function toggleService(serviceId: string) {
-    const exists = form.serviceIds.includes(serviceId);
-    const nextServiceIds = exists
-      ? form.serviceIds.filter((id) => id !== serviceId)
-      : [...form.serviceIds, serviceId];
+    setForm((current) => {
+      const exists = current.serviceIds.includes(serviceId);
+      const nextServiceIds = exists
+        ? current.serviceIds.filter((id) => id !== serviceId)
+        : [...current.serviceIds, serviceId];
 
-    setForm((current) => ({ ...current, serviceIds: nextServiceIds }));
+      return { ...current, serviceIds: nextServiceIds };
+    });
     setErrors((current) => ({ ...current, serviceIds: "" }));
   }
 
@@ -230,18 +232,17 @@ export function BookingFlow() {
                     </div>
                   ))
                 ) : (
-                  <p className="text-sm text-muted-foreground" data-summary-empty>
+                  <p className="text-sm text-muted-foreground">
                     Nenhum serviço selecionado.
                   </p>
                 )}
-                <div className="hidden space-y-2" data-summary-selected-list />
               </div>
               <Separator />
               <div className="space-y-2 text-sm">
-                <SummaryRow label="Serviços" value={formatCurrency(totals.subtotal)} valueAttr="data-summary-services" />
+                <SummaryRow label="Serviços" value={formatCurrency(totals.subtotal)} />
                 <SummaryRow label="Deslocamento" value={formatCurrency(totals.displacementFee)} />
                 <Separator />
-                <SummaryRow label="Total" value={formatCurrency(totals.total)} strong valueAttr="data-summary-total" />
+                <SummaryRow label="Total" value={formatCurrency(totals.total)} strong />
               </div>
             </div>
 
@@ -279,30 +280,20 @@ function ServiceStep({
           const selected = selectedIds.includes(service.id);
 
           return (
-            <label
+            <button
               key={service.id}
+              type="button"
+              onClick={() => onToggle(service.id)}
+              aria-pressed={selected}
               className={cn(
-                "focus-ring flex min-h-52 cursor-pointer flex-col rounded-lg border bg-card p-5 text-left transition hover:border-primary/60 hover:shadow-soft has-[:checked]:border-primary has-[:checked]:bg-primary/10 has-[:checked]:shadow-soft",
+                "focus-ring flex min-h-52 cursor-pointer flex-col rounded-lg border bg-card p-5 text-left transition hover:border-primary/60 hover:shadow-soft",
                 selected && "border-primary bg-primary/10 shadow-soft"
               )}
             >
-              <input
-                id={`service-${service.id}`}
-                name="natiara-service"
-                type="checkbox"
-                value={service.id}
-                data-service-name={service.name}
-                data-service-price={service.price}
-                checked={selected}
-                onChange={() => onToggle(service.id)}
-                className="mb-4 h-5 w-5 accent-[hsl(var(--primary))]"
-              />
-              <span className="flex items-start justify-between gap-4">
-                <span>
-                  <span className="block text-base font-semibold leading-6">{service.name}</span>
-                  <span className="mt-3 block text-sm leading-6 text-muted-foreground">
-                    {service.description}
-                  </span>
+              <span>
+                <span className="block text-base font-semibold leading-6">{service.name}</span>
+                <span className="mt-3 block text-sm leading-6 text-muted-foreground">
+                  {service.description}
                 </span>
               </span>
               <span className="mt-auto flex items-center justify-between gap-3 pt-5">
@@ -318,68 +309,14 @@ function ServiceStep({
                   {selected ? "Selecionado" : "Selecionar"}
                 </span>
               </span>
-            </label>
+            </button>
           );
         })}
       </div>
 
       {error ? <p className="text-sm text-destructive">{error}</p> : null}
-      <ServiceFallbackScript />
     </section>
   );
-}
-
-function ServiceFallbackScript() {
-  const code = `
-    (() => {
-      if (window.__natiaraServiceFallbackReady) return;
-      window.__natiaraServiceFallbackReady = true;
-
-      const formatCurrency = (value) =>
-        new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(value);
-
-      const refreshSummary = () => {
-        const checked = Array.from(document.querySelectorAll('input[name="natiara-service"]:checked'));
-        const list = document.querySelector("[data-summary-selected-list]");
-        const empty = document.querySelector("[data-summary-empty]");
-        const servicesValue = document.querySelector("[data-summary-services]");
-        const totalValue = document.querySelector("[data-summary-total]");
-
-        const subtotal = checked.reduce((sum, input) => {
-          return sum + Number(input.getAttribute("data-service-price") || 0);
-        }, 0);
-
-        if (list) {
-          list.innerHTML = checked
-            .map((input) => {
-              const name = input.getAttribute("data-service-name") || "";
-              const price = Number(input.getAttribute("data-service-price") || 0);
-              return '<div class="flex items-start justify-between gap-3 text-sm"><span class="text-muted-foreground">' +
-                name +
-                '</span><span class="font-medium">' +
-                formatCurrency(price) +
-                '</span></div>';
-            })
-            .join("");
-          list.classList.toggle("hidden", checked.length === 0);
-        }
-
-        if (empty) empty.classList.toggle("hidden", checked.length > 0);
-        if (servicesValue) servicesValue.textContent = formatCurrency(subtotal);
-        if (totalValue) totalValue.textContent = formatCurrency(subtotal);
-      };
-
-      document.addEventListener("change", (event) => {
-        if (event.target && event.target.matches && event.target.matches('input[name="natiara-service"]')) {
-          refreshSummary();
-        }
-      });
-
-      refreshSummary();
-    })();
-  `;
-
-  return <script dangerouslySetInnerHTML={{ __html: code }} />;
 }
 
 function CustomerStep({
@@ -559,18 +496,16 @@ function FieldError({ children, message }: { children: React.ReactNode; message?
 function SummaryRow({
   label,
   value,
-  strong = false,
-  valueAttr
+  strong = false
 }: {
   label: string;
   value: string;
   strong?: boolean;
-  valueAttr?: string;
 }) {
   return (
     <div className={cn("flex items-center justify-between gap-3", strong && "text-base font-semibold")}>
       <span className="text-muted-foreground">{label}</span>
-      <span {...(valueAttr ? { [valueAttr]: true } : {})}>{value}</span>
+      <span>{value}</span>
     </div>
   );
 }

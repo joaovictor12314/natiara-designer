@@ -1,17 +1,18 @@
 import { NextResponse } from "next/server";
-import { loginSchema } from "@/lib/schemas";
+import { adminLoginSchema } from "@/lib/schemas";
 import { adminUser } from "@/lib/users";
 
 export async function POST(request: Request) {
   const payload = await request.json();
-  const parsed = loginSchema.safeParse(payload);
+  const parsed = adminLoginSchema.safeParse(payload);
 
   if (!parsed.success) {
-    return NextResponse.json({ message: "E-mail ou senha invalidos." }, { status: 422 });
+    return NextResponse.json({ message: "E-mail, senha ou codigo invalidos." }, { status: 422 });
   }
 
   const adminEmail = process.env.ADMIN_EMAIL || adminUser.email;
   const adminPassword = process.env.ADMIN_PASSWORD;
+  const adminTwoFactorCode = process.env.ADMIN_2FA_CODE || "123456";
 
   if (!adminPassword) {
     return NextResponse.json(
@@ -22,11 +23,12 @@ export async function POST(request: Request) {
 
   const valid =
     parsed.data.email.toLowerCase() === adminEmail.toLowerCase() &&
-    parsed.data.password === adminPassword;
+    parsed.data.password === adminPassword &&
+    parsed.data.twoFactorCode === adminTwoFactorCode;
 
   if (!valid) {
     return NextResponse.json(
-      { message: "E-mail ou senha de administrador incorretos." },
+      { message: "E-mail, senha ou codigo de administrador incorretos." },
       { status: 401 }
     );
   }

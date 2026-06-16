@@ -18,6 +18,7 @@ export function LoginForm() {
   const [tab, setTab] = useState<LoginTab>("cliente");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [twoFactorCode, setTwoFactorCode] = useState("");
   const [error, setError] = useState("");
 
   function changeTab(nextTab: LoginTab) {
@@ -25,6 +26,7 @@ export function LoginForm() {
     setError("");
     setEmail("");
     setPassword("");
+    setTwoFactorCode("");
   }
 
   async function submit() {
@@ -35,7 +37,7 @@ export function LoginForm() {
           headers: {
             "Content-Type": "application/json"
           },
-          body: JSON.stringify({ email, password })
+          body: JSON.stringify({ email, password, twoFactorCode })
         });
         const data = (await response.json()) as { message?: string; user?: AppUser };
 
@@ -91,6 +93,18 @@ export function LoginForm() {
               <Label htmlFor="password">Senha</Label>
               <Input id="password" type="password" value={password} onChange={(event) => setPassword(event.target.value)} />
             </div>
+            {tab === "admin" ? (
+              <div className="space-y-2">
+                <Label htmlFor="twoFactorCode">Código de verificação</Label>
+                <Input
+                  id="twoFactorCode"
+                  inputMode="numeric"
+                  maxLength={6}
+                  value={twoFactorCode}
+                  onChange={(event) => setTwoFactorCode(event.target.value)}
+                />
+              </div>
+            ) : null}
             {error ? <p className="text-sm text-destructive">{error}</p> : null}
             <Button className="w-full" type="button" onClick={submit}>
               <Mail className="h-4 w-4" />
