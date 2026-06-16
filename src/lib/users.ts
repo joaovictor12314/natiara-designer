@@ -57,7 +57,16 @@ export function createUser(input: UserRegistrationInput) {
 }
 
 export function loginUser(input: { email: string; password: string }) {
-  const data = loginSchema.parse(input);
+  const parsed = loginSchema.safeParse({
+    email: input.email.trim(),
+    password: input.password
+  });
+
+  if (!parsed.success) {
+    throw new Error(parsed.error.issues[0]?.message || "Dados de login invalidos.");
+  }
+
+  const data = parsed.data;
   const user = listUsers().find(
     (item) =>
       item.role !== "admin" &&

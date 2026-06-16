@@ -37,7 +37,11 @@ export function LoginForm() {
           headers: {
             "Content-Type": "application/json"
           },
-          body: JSON.stringify({ email, password, twoFactorCode })
+          body: JSON.stringify({
+            email: email.trim(),
+            password,
+            twoFactorCode: twoFactorCode.trim()
+          })
         });
         const data = (await response.json()) as { message?: string; user?: AppUser };
 
@@ -51,7 +55,7 @@ export function LoginForm() {
         return;
       }
 
-      const user = loginUser({ email, password });
+      const user = loginUser({ email: email.trim(), password });
 
       if (tab === "cliente" && user.role === "admin") {
         setError("Use a aba Administrador para este usuario.");

@@ -4,7 +4,12 @@ import { adminUser } from "@/lib/users";
 
 export async function POST(request: Request) {
   const payload = await request.json();
-  const parsed = adminLoginSchema.safeParse(payload);
+  const parsed = adminLoginSchema.safeParse({
+    ...payload,
+    email: typeof payload.email === "string" ? payload.email.trim() : payload.email,
+    twoFactorCode:
+      typeof payload.twoFactorCode === "string" ? payload.twoFactorCode.trim() : payload.twoFactorCode
+  });
 
   if (!parsed.success) {
     return NextResponse.json({ message: "E-mail, senha ou codigo invalidos." }, { status: 422 });
